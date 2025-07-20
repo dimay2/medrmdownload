@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>meDRM App Download</title>
+    <!-- Tailwind CSS for basic styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the Inter font and overall aesthetics */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff; /* White background for the card */
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Soft shadow */
+            padding: 2.5rem;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3b82f6; /* Blue spinner */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Space between buttons */
+            margin-top: 2rem;
+        }
+        .app-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* More rounded buttons */
+            font-weight: 600;
+            text-decoration: none;
+            color: #ffffff;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .app-button:hover {
+            transform: translateY(-2px);
+        }
+        .google-play {
+            background-color: #4CAF50; /* Green for Google Play */
+        }
+        .google-play:hover {
+            background-color: #45a049;
+        }
+        .apple-app-store {
+            background-color: #007AFF; /* Blue for Apple App Store */
+        }
+        .apple-app-store:hover {
+            background-color: #006ee6;
+        }
+        .icon {
+            margin-right: 0.75rem;
+            width: 24px;
+            height: 24px;
+        }
+        /* Responsive adjustments */
+        @media (min-width: 640px) {
+            .button-group {
+                flex-direction: row; /* Buttons side-by-side on larger screens */
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">Downloading meDRM App...</h1>
+        <p class="text-gray-600 mb-2">
+            Please wait while we redirect you to the correct app store.
+        </p>
+        <p id="referralInfo" class="text-sm text-gray-500 mb-4"></p>
+        <p class="text-gray-600 mb-6">
+            If the redirection does not happen automatically, please click one of the buttons below.
+        </p>
+        <div class="spinner"></div>
+
+        <div class="button-group">
+            <!-- Google Play Store Button -->
+            <a id="googlePlayButton" href="#" target="_blank" class="app-button google-play">
+                <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-1.5-13.5L7 10.5l4.5 4.5 4.5-4.5-3.5-3.5z"/>
+                    <path fill="#fff" d="M12 17.5L7 12.5l5-5 5 5-5 5z"/>
+                </svg>
+                Download on Google Play
+            </a>
+
+            <!-- Apple App Store Button -->
+            <a id="appleAppStoreButton" href="#" target="_blank" class="app-button apple-app-store">
+                <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-1.5-13.5L7 10.5l4.5 4.5 4.5-4.5-3.5-3.5z"/>
+                    <path fill="#fff" d="M12 17.5L7 12.5l5-5 5 5-5 5z"/>
+                </svg>
+                Download on the App Store
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // IMPORTANT: Replace these with your actual app store base URLs
+        const androidAppBaseUrl = "https://play.google.com/store/apps/details?id=com.ishomer.medrm";
+        // Base for Apple App Store. We will append parameters for the campaign link.
+        const iosAppBaseUrl = "https://apps.apple.com/app/apple-store/id6744931891";
+
+        // Fixed Apple Campaign Link parameters
+        const iosPtParam = "126443041"; // Your provider token
+        const iosMtParam = "8";      // Media type (8 for mobile app)
+
+        // Define static fallback UTMs
+        const staticUtmSource = "ptst";
+        const staticUtmCampaign = "gor20250713evolrofdasebi-5";
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            let redirectPerformed = false;
+            const referralInfoElement = document.getElementById('referralInfo');
+
+            // Get URL parameters from the incoming URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const utmSourceFromUrl = urlParams.get('utm_source');
+            const utmCampaignFromUrl = urlParams.get('utm_campaign');
+            const refParamFromUrl = urlParams.get('ref'); // Keep original 'ref' for backward compatibility if needed
+
+            // Determine the final UTM values to use for redirection
+            // If UTMs are not present in the URL, use the static fallback values
+            const finalUtmSource = utmSourceFromUrl || staticUtmSource;
+            const finalUtmCampaign = utmCampaignFromUrl || staticUtmCampaign;
+
+            let referralDisplay = '';
+            if (utmSourceFromUrl || utmCampaignFromUrl) {
+                // Display UTMs found in the URL
+                referralDisplay += `Tracking from URL: `;
+                if (utmSourceFromUrl) referralDisplay += `Source: ${utmSourceFromUrl}`;
+                if (utmCampaignFromUrl) referralDisplay += (utmSourceFromUrl ? `, ` : ``) + `Campaign: ${utmCampaignFromUrl}`;
+            } else {
+                // Display that static UTMs are being used
+                referralDisplay += `Using static tracking: Source: ${staticUtmSource}, Campaign: ${staticUtmCampaign}`;
+            }
+            // Optionally mention original 'ref' param if it was present and no UTMs were
+            if (refParamFromUrl && !utmSourceFromUrl && !utmCampaignFromUrl) {
+                referralDisplay += ` (Original 'ref' param: ${refParamFromUrl})`;
+            }
+
+            if (referralDisplay) {
+                referralInfoElement.textContent = referralDisplay;
+            } else {
+                // This case should be rare now due to static fallbacks
+                referralInfoElement.textContent = `No specific tracking parameters detected.`;
+            }
+
+            // Function to construct and redirect
+            function redirectToStore(baseUrl, isAndroid) {
+                let finalUrl = baseUrl;
+                let paramsToAppend = [];
+
+                if (isAndroid) {
+                    // For Android, combine all parameters into the 'referrer' parameter
+                    paramsToAppend.push(`utm_source=${encodeURIComponent(finalUtmSource)}`);
+                    paramsToAppend.push(`utm_campaign=${encodeURIComponent(finalUtmCampaign)}`);
+                    
+                    // Note: refParamFromUrl is not included in Android referrer if UTMs are used (either dynamic or static)
+                    // as the request is to use utm_source and utm_campaign.
+
+                    if (paramsToAppend.length > 0) {
+                        finalUrl += `&referrer=${encodeURIComponent(paramsToAppend.join('&'))}`;
+                    }
+                } else {
+                    // For iOS, construct the Apple Campaign Link
+                    // Fixed parameters pt and mt are always included
+                    paramsToAppend.push(`pt=${encodeURIComponent(iosPtParam)}`);
+                    paramsToAppend.push(`mt=${encodeURIComponent(iosMtParam)}`);
+
+                    // Use finalUtmCampaign for 'ct'
+                    paramsToAppend.push(`ct=${encodeURIComponent(finalUtmCampaign)}`);
+
+                    // Append all collected parameters to the iOS base URL
+                    if (paramsToAppend.length > 0) {
+                        finalUrl += `?${paramsToAppend.join('&')}`;
+                    }
+                }
+                
+                window.location.href = finalUrl;
+                redirectPerformed = true;
+            }
+
+            // Check if it's an Android device
+            if (/android/i.test(userAgent)) {
+                console.log("Detected Android device. Redirecting to Google Play Store...");
+                redirectToStore(androidAppBaseUrl, true);
+            }
+            // Check if it's an iOS device (iPad, iPhone, iPod)
+            else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                console.log("Detected iOS device. Redirecting to Apple App Store...");
+                redirectToStore(iosAppBaseUrl, false); // For iOS, use the base URL for redirect
+            }
+            // Fallback for other devices or if redirection didn't happen automatically
+            else {
+                console.log("Device not recognized as Android or iOS, or automatic redirection failed. Displaying buttons.");
+            }
+
+            // Ensure buttons are visible even if auto-redirect happens, for user clarity
+            // Set hrefs for manual buttons with UTM parameters
+            let googlePlayButton = document.getElementById('googlePlayButton');
+            let appleAppStoreButton = document.getElementById('appleAppStoreButton');
+
+            let androidManualUrl = androidAppBaseUrl;
+            let iosManualUrl = iosAppBaseUrl; // Base URL for iOS manual button
+
+            let manualAndroidParams = [];
+            manualAndroidParams.push(`utm_source=${encodeURIComponent(finalUtmSource)}`);
+            manualAndroidParams.push(`utm_campaign=${encodeURIComponent(finalUtmCampaign)}`);
+            // No refParam for Android manual if UTMs are used.
+
+            if (manualAndroidParams.length > 0) {
+                androidManualUrl += `&referrer=${encodeURIComponent(manualAndroidParams.join('&'))}`;
+            }
+
+            // Construct iOS manual button URL with Apple Campaign parameters
+            let manualIosParams = [];
+            manualIosParams.push(`pt=${encodeURIComponent(iosPtParam)}`);
+            manualIosParams.push(`mt=${encodeURIComponent(iosMtParam)}`);
+            manualIosParams.push(`ct=${encodeURIComponent(finalUtmCampaign)}`); // Use finalUtmCampaign for ct
+
+            if (manualIosParams.length > 0) {
+                iosManualUrl += `?${manualIosParams.join('&')}`;
+            }
+
+            googlePlayButton.href = androidManualUrl;
+            appleAppStoreButton.href = iosManualUrl;
+
+
+            // A small timeout to ensure the user sees the page before redirection,
+            // or to handle cases where the browser might block immediate redirects.
+            setTimeout(() => {
+                if (!redirectPerformed) {
+                    console.log("Automatic redirection did not occur within timeout. User can click buttons.");
+                }
+            }, 3000); // Wait 3 seconds before concluding auto-redirect failed
+        });
+    </script>
+</body>
+</html>
